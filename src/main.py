@@ -4,8 +4,9 @@ import pandas as pd
 
 def app():
     st.title('Lifetime Thought Tracker')
-    conn = create_connection()
-    create_table(conn)
+    if "conn" not in st.session_state:
+        st.session_state["conn"] = create_connection()
+    create_table(st.session_state["conn"])
 
     page = st.sidebar.selectbox('Choose a page', ['Summaries', 'Add/Edit Ideas', 'Data'])
 

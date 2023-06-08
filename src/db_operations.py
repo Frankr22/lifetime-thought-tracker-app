@@ -4,13 +4,11 @@ from sqlite3 import Error
 def create_connection():
     conn = None
     try:
-        conn = sqlite3.connect('ideas.db')  # This creates a database file named ideas.db
+        conn = sqlite3.connect('ideas.db', check_same_thread=False)  # Create a persistent database file named ideas.db and allow connections from different threads
         print(f'successful connection with sqlite version {sqlite3.version}')
     except Error as e:
         print(e)
-    
-    if conn:
-        return conn
+    return conn
 
 def create_table(conn):
     try:
