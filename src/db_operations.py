@@ -1,39 +1,51 @@
-import pandas as pd
+import sqlite3
 
-DB_FILE = "ideas.csv"
+def create_connection():
+    conn = None;
+    try:
+        conn = sqlite3.connect(':memory:')   # Creates an in-memory SQLite database
+        return conn
+    except Error as e:
+        print(e)
+
+def close_connection(conn):
+    conn.close()
 
 def create_table():
-    # Check if ideas.csv exists and if not, create it with column names
-    try:
-        df = pd.read_csv('ideas.csv')
-    except FileNotFoundError:
-        df = pd.DataFrame(columns=['summary', 'primary_tags', 'secondary_tags', 'link', 'quotes', 'media'])
-        df.to_csv('ideas.csv', index=False)
+    conn = create_connection()
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS ideas
+                (id INTEGER PRIMARY KEY AUTOINCREMENT, summary TEXT, primary_tags TEXT, secondary_tags TEXT, link TEXT, quotes TEXT, media TEXT)''')
+    conn.commit()
 
 def add_idea(idea):
-    df = pd.read_csv('ideas.csv')
-    new_idea = pd.Series(idea, index=df.columns)
-    df = df.append(new_idea, ignore_index=True)
-    df.to_csv('ideas.csv', index=False)
-
-def add_or_update_idea(conn, idea, idea_id=None):
-    if idea_id is None:
-        sql = ''' INSERT INTO ideas(summary,primary_tags,secondary_tags,link,quotes,media)
-                  VALUES(?,?,?,?,?,?) '''
-    else:
-        sql = ''' UPDATE ideas SET summary = ?, primary_tags = ?, secondary_tags = ?, link = ?, quotes = ?, media = ? WHERE id = ?'''
-
-    cur = conn.cursor()
-    cur.execute(sql, (*idea, idea_id) if idea_id is not None else idea)
+    conn = create_connection()
+    c = conn.cursor()
+    c.execute('INSERT INTO ideas(summary, primary_tags, secondary_tags, link, quotes, media) VALUES (?,?,?,?,?,?)', idea)
     conn.commit()
-    return cur.lastrowid
 
 def fetch_all_ideas():
-    df = pd.read_csv('ideas.csv')
-    return df.values.tolist()
+    conn = create_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM ideas')
+    ideas = c.fetchall()
+    return ideas
 
-def delete_idea(conn, idea_id):
-    sql = 'DELETE FROM ideas WHERE id=?'
-    cur = conn.cursor()
-    cur.execute(sql, (idea_id,))
+def fetch_idea(id):
+    conn = create_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM ideas WHERE id = ?', (id,))
+    idea = c.fetchone()
+    return idea
+
+def update_idea(idea, id):
+    conn = create_connection()
+    c = conn.cursor()
+    c.execute('UPDATE ideas SET summary = ?, primary_tags = ?, secondary_tags = ?, link = ?, quotes = ?, media = ? WHERE id = ?', (*idea, id))
+    conn.commit()
+
+def delete_idea(id):
+    conn = create_connection()
+    c = conn.cursor()
+    c.execute('DELETE FROM ideas WHERE id = ?', (id,))
     conn.commit()
