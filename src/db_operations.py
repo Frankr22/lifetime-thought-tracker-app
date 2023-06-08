@@ -37,6 +37,10 @@ def add_idea(conn, idea):
 
 def fetch_all_ideas(conn):
     cur = conn.cursor()
-    cur.execute("SELECT * FROM ideas")
-    rows = cur.fetchall()
-    return rows
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='ideas';")
+    if cur.fetchone() is not None:
+        cur.execute("SELECT * FROM ideas")
+        rows = cur.fetchall()
+        return rows
+    else:
+        return []
