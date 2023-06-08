@@ -1,5 +1,6 @@
 import streamlit as st
 from db_operations import create_connection, create_table, add_idea, fetch_all_ideas
+import pandas as pd
 
 def app():
     st.title('Lifetime Thought Tracker')
