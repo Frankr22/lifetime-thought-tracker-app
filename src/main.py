@@ -14,7 +14,7 @@ def app():
 
         if search_button:  # Only execute search when button is pressed
             ideas = fetch_all_ideas()
-            matching_ideas = [idea for idea in ideas if keyword.lower() in idea[0].lower() or keyword.lower() in idea[1].lower()]
+            matching_ideas = [idea for idea in ideas if keyword.lower() in (idea[0] or "").lower() or keyword.lower() in (idea[1] or "").lower()]
 
             if matching_ideas:  # Check if any ideas were found
                 for idea in matching_ideas:
