@@ -29,7 +29,7 @@ def app():
             if submit_button:
                 idea = (summary, primary_tags, secondary_tags, link, quotes, media)
                 add_idea(conn, idea)
+                st.experimental_rerun()
 
 if __name__ == '__main__':
     app()
-
