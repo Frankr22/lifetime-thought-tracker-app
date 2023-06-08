@@ -33,9 +33,21 @@ def app():
 
             submit_button = st.form_submit_button(label='Submit')
 
-            if submit_button:
+        if submit_button:
+            # Ensure empty fields are treated as an empty string rather than None
+            summary = summary or ""
+            primary_tags = primary_tags or ""
+            secondary_tags = secondary_tags or ""
+            link = link or ""
+            quotes = quotes or ""
+            media = media or ""
+
+            # Make sure the summary is not empty
+            if summary.strip() == '':
+                st.error('Summary cannot be empty')
+            else:
                 idea = (summary, primary_tags, secondary_tags, link, quotes, media)
-                add_idea(idea)
+                add_idea(conn, idea)
                 st.experimental_rerun()
 
     elif page == 'Data':
