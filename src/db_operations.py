@@ -34,3 +34,9 @@ def add_idea(conn, idea):
     cur.execute(sql, idea)
     conn.commit()
     return cur.lastrowid
+
+def fetch_all_ideas(conn):
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM ideas")
+    rows = cur.fetchall()
+    return rows
