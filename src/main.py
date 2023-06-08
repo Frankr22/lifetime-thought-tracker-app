@@ -3,7 +3,8 @@ from db_operations import create_connection, create_table, add_idea, fetch_all_i
 
 def app():
     st.title('Lifetime Thought Tracker')
-    
+    conn = create_connection()
+    create_table(conn)
     page = st.sidebar.selectbox('Choose a page', ['Home', 'Summaries'])
 
     if page == 'Home':
@@ -18,16 +19,14 @@ def app():
             submit_button = st.form_submit_button(label='Submit')
 
             if submit_button:
-                conn = create_connection()
-                create_table(conn)
                 idea = (summary, primary_tags, secondary_tags, link, quotes, media)
                 add_idea(conn, idea)
 
     elif page == 'Summaries':
-        conn = create_connection()
         ideas = fetch_all_ideas(conn)
         for idea in ideas:
             st.write(idea)
-
+            
 if __name__ == '__main__':
     app()
+
