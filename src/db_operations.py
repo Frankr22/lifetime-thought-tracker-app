@@ -2,9 +2,9 @@ import sqlite3
 from sqlite3 import Error
 
 def create_connection():
-    conn = None;
+    conn = None
     try:
-        conn = sqlite3.connect(':memory:')  # This creates an in-memory database for prototyping
+        conn = sqlite3.connect('ideas.db')  # This creates a database file named ideas.db
         print(f'successful connection with sqlite version {sqlite3.version}')
     except Error as e:
         print(e)
