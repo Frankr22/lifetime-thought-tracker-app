@@ -1,9 +1,9 @@
-from sqlalchemy import create_engine, Table, MetaData
+from sqlalchemy import create_engine, Table, MetaData, Column, Integer, String, DateTime
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 import streamlit as st
 import pandas as pd
-
+from datetime import datetime
 
 def app():
     st.title("Lifetime Thought Tracker")
@@ -89,18 +89,19 @@ def idea_input_fields(session):
             'secondary_tags': secondary_tags, 
             'link': link, 
             'quotes': quotes, 
-            'media': media
+            'media': media,
+            'created_at': datetime.now(),  # Set the created_at timestamp
+            'updated_at': datetime.now()  # Set the updated_at timestamp
         }
 
         session.execute(
             text(
-                "INSERT INTO ideas(summary, primary_tags, secondary_tags, link, quotes, media) "
-                "VALUES (:summary, :primary_tags, :secondary_tags, :link, :quotes, :media)"
+                "INSERT INTO ideas(summary, primary_tags, secondary_tags, link, quotes, media, created_at, updated_at) "
+                "VALUES (:summary, :primary_tags, :secondary_tags, :link, :quotes, :media, :created_at, :updated_at)"
             ),
             idea
         )
         session.commit()
-
 
 engine = create_engine('postgresql://postgres:postgres@localhost:5432/thought_tracker_db')
 Session = sessionmaker(bind=engine)
