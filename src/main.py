@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
+from sqlalchemy import text
 
 def app():
     st.title('Lifetime Thought Tracker')
-    
     conn = st.experimental_connection('thought_tracker_db', type='sql')
+    conn.execute(text('''CREATE TABLE IF NOT EXISTS ideas
+                (id SERIAL PRIMARY KEY, summary TEXT, primary_tags TEXT, secondary_tags TEXT, link TEXT, quotes TEXT, media TEXT)'''))
 
     page = st.sidebar.selectbox('Choose a page', ['Summaries', 'Add/Edit Ideas', 'Data'])
 
@@ -13,7 +15,8 @@ def app():
         search_button = st.button('Search')
 
         if search_button:
-            ideas = conn.query('SELECT * FROM ideas')
+            result = conn.execute(text('SELECT * FROM ideas'))
+            ideas = result.fetchall()
             matching_ideas = [idea for idea in ideas if keyword.lower() in (idea[1] or "").lower() or keyword.lower() in (idea[2] or "").lower() or keyword.lower() in (idea[3] or "").lower()]
 
             if matching_ideas:
@@ -25,7 +28,8 @@ def app():
     elif page == 'Add/Edit Ideas':
         idea_to_edit = None
         if 'edit_idea_id' in st.session_state:
-            idea_to_edit = conn.query(f'SELECT * FROM ideas WHERE id = {st.session_state["edit_idea_id"]}')[0]
+            result = conn.execute(text('SELECT * FROM ideas WHERE id = :id'), {'id': st.session_state['edit_idea_id']})
+            idea_to_edit = result.fetchone()
 
         with st.form(key='ideas_form'):
             summary = st.text_area('Summary', value=idea_to_edit[1] if idea_to_edit else '', help='Write a summary of your idea or thought')
@@ -50,34 +54,23 @@ def app():
             else:
                 idea = (summary, primary_tags, secondary_tags, link, quotes, media)
                 if 'edit_idea_id' in st.session_state:
-                    conn.session.execute(f'UPDATE ideas SET summary = "{summary}", primary_tags = "{primary_tags}", secondary_tags = "{secondary_tags}", link = "{link}", quotes = "{quotes}", media = "{media}" WHERE id = {st.session_state["edit_idea_id"]}')
-                    conn.session.commit()
+                    conn.execute(text('UPDATE ideas SET summary = :summary, primary_tags = :primary_tags, secondary_tags = :secondary_tags, link = :link, quotes = :quotes, media = :media WHERE id = :id'), {'summary': summary, 'primary_tags': primary_tags, 'secondary_tags': secondary_tags, 'link': link, 'quotes': quotes, 'media': media, 'id': st.session_state['edit_idea_id']})
                     del st.session_state['edit_idea_id']
                 else:
-                    conn.session.execute(f'INSERT INTO ideas (summary, primary_tags, secondary_tags, link, quotes, media) VALUES ("{summary}", "{primary_tags}", "{secondary_tags}", "{link}", "{quotes}", "{media}")')
-                    conn.session.commit()
-                st.experimental_rerun()
+                    conn.execute(text('INSERT INTO ideas(summary, primary_tags, secondary_tags, link, quotes, media) VALUES (:summary, :primary_tags, :secondary_tags, :link, :quotes, :media)'), {'summary': summary, 'primary_tags': primary_tags, 'secondary_tags': secondary_tags, 'link': link, 'quotes': quotes, 'media': media})
 
     elif page == 'Data':
-        st.header("Data View")
-        ideas = conn.query('SELECT * FROM ideas')
-        ideas_df = pd.DataFrame(ideas, columns=['ID', 'Summary', 'Primary Tags', 'Secondary Tags', 'Link', 'Quotes', 'Media'])
-        st.table(ideas_df)
-
-        edit_idea_id = st.text_input('Enter the ID of the idea you want to edit')
-        edit_button = st.button('Edit Idea')
-
-        if edit_button:
-            st.session_state['edit_idea_id'] = edit_idea_id
-            st.experimental_rerun()
-
-        delete_idea_id = st.text_input('Enter the ID of the idea you want to delete')
-        delete_button = st.button('Delete Idea')
+        result = conn.execute(text('SELECT * FROM ideas'))
+        ideas = result.fetchall()
+        st.write(pd.DataFrame(ideas, columns=['ID', 'Summary', 'Primary Tags', 'Secondary Tags', 'Link', 'Quotes', 'Media']))
+        delete_button = st.button('Delete selected')
 
         if delete_button:
-            conn.session.execute(f'DELETE FROM ideas WHERE id = {delete_idea_id}')
-            conn.session.commit()
-            st.experimental_rerun()
+            selected_idea = st.selectbox('Select an idea to delete', ideas)
+            if selected_idea:
+                conn.execute(text('DELETE FROM ideas WHERE id = :id'), {'id': selected_idea[0]})
+            else:
+                st.write('No ideas found')
 
 if __name__ == '__main__':
     app()
