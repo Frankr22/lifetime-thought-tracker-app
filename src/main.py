@@ -1,10 +1,10 @@
 import streamlit as st
-from db_operations import create_table, add_idea, fetch_all_ideas, fetch_idea, update_idea, delete_idea
 import pandas as pd
 
 def app():
     st.title('Lifetime Thought Tracker')
-    create_table()
+    
+    conn = st.experimental_connection('thought_tracker_db', type='sql')
 
     page = st.sidebar.selectbox('Choose a page', ['Summaries', 'Add/Edit Ideas', 'Data'])
 
@@ -13,7 +13,7 @@ def app():
         search_button = st.button('Search')
 
         if search_button:
-            ideas = fetch_all_ideas()
+            ideas = conn.query('SELECT * FROM ideas')
             matching_ideas = [idea for idea in ideas if keyword.lower() in (idea[1] or "").lower() or keyword.lower() in (idea[2] or "").lower() or keyword.lower() in (idea[3] or "").lower()]
 
             if matching_ideas:
@@ -25,7 +25,7 @@ def app():
     elif page == 'Add/Edit Ideas':
         idea_to_edit = None
         if 'edit_idea_id' in st.session_state:
-            idea_to_edit = fetch_idea(st.session_state['edit_idea_id'])
+            idea_to_edit = conn.query(f'SELECT * FROM ideas WHERE id = {st.session_state["edit_idea_id"]}')[0]
 
         with st.form(key='ideas_form'):
             summary = st.text_area('Summary', value=idea_to_edit[1] if idea_to_edit else '', help='Write a summary of your idea or thought')
@@ -50,15 +50,17 @@ def app():
             else:
                 idea = (summary, primary_tags, secondary_tags, link, quotes, media)
                 if 'edit_idea_id' in st.session_state:
-                    update_idea(idea, st.session_state['edit_idea_id'])
+                    conn.session.execute(f'UPDATE ideas SET summary = "{summary}", primary_tags = "{primary_tags}", secondary_tags = "{secondary_tags}", link = "{link}", quotes = "{quotes}", media = "{media}" WHERE id = {st.session_state["edit_idea_id"]}')
+                    conn.session.commit()
                     del st.session_state['edit_idea_id']
                 else:
-                    add_idea(idea)
+                    conn.session.execute(f'INSERT INTO ideas (summary, primary_tags, secondary_tags, link, quotes, media) VALUES ("{summary}", "{primary_tags}", "{secondary_tags}", "{link}", "{quotes}", "{media}")')
+                    conn.session.commit()
                 st.experimental_rerun()
 
     elif page == 'Data':
         st.header("Data View")
-        ideas = fetch_all_ideas()
+        ideas = conn.query('SELECT * FROM ideas')
         ideas_df = pd.DataFrame(ideas, columns=['ID', 'Summary', 'Primary Tags', 'Secondary Tags', 'Link', 'Quotes', 'Media'])
         st.table(ideas_df)
 
@@ -73,7 +75,8 @@ def app():
         delete_button = st.button('Delete Idea')
 
         if delete_button:
-            delete_idea(delete_idea_id)
+            conn.session.execute(f'DELETE FROM ideas WHERE id = {delete_idea_id}')
+            conn.session.commit()
             st.experimental_rerun()
 
 if __name__ == '__main__':
