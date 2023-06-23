@@ -5,20 +5,19 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import pytz
+from sqlalchemy import text
 
 PAGES = ["Homepage", "Data", "Add/Edit Idea"]
 DB_URL = 'postgresql://postgres:postgres@localhost:5432/postgres'
 TIMEZONE = pytz.timezone('Australia/Perth')
-COLUMNS = ['topic', 'summary', 'primary_tags', 'secondary_tags', 'link', 'quotes', 'media', 'created_at', 'updated_at']
+COLUMNS = ['id', 'title', 'summary', 'primary_tags', 'secondary_tags', 'sources', 'status', 'notes', 'date_added', 'date_last_updated']
 
 engine = create_engine(DB_URL)
 Session = sessionmaker(bind=engine)
 metadata = MetaData()
 ideas = Table('ideas', metadata, autoload_with=engine)
 
-from sqlalchemy import text
-
-def create_filtered_df(session, search_term=None):
+def create_filtered_df(session, search_term=None, primary_tag=None):
     result = session.execute(text("SELECT * FROM ideas"))
     df = pd.DataFrame(result.fetchall(), columns=result.keys())
 
@@ -30,21 +29,57 @@ def create_filtered_df(session, search_term=None):
         df = df[df['summary'].str.contains(search_term, case=False) |
                 df['primary_tags'].str.contains(search_term, case=False) |
                 df['secondary_tags'].str.contains(search_term, case=False)]
+    
+    if primary_tag:
+        df = df[df['primary_tags'].str.contains(primary_tag, case=False)]
+
     return df
 
 def display_idea_details(row):
-    expander = st.expander(row['topic'] + " : " + row['summary'])
+    expander = st.expander(row['title'] + " : " + row['summary'])
     with expander:
         for column in COLUMNS:
             st.write(f"{column.title().replace('_', ' ')}: {row[column]}")
 
+def get_all_primary_tags(session):
+    result = session.execute(text("SELECT primary_tags FROM ideas"))
+    all_tags = set()
+    for row in result:
+        tags = row[0]
+        if tags:
+            all_tags.update(tags)
+    return sorted(all_tags)
+
 def idea_input_fields(session):
-    idea = {column: st.text_input(column.title().replace('_', ' ')) for column in COLUMNS[:-2]}
-    idea['created_at'] = idea['updated_at'] = datetime.now(TIMEZONE)
+    st.write("## Add a new idea")
+
+    title = st.text_input("Title", help="Enter the title for your thought. This should be succinct, encapsulating the main idea in up to 60 characters.")
+    summary = st.text_area("Summary", help="This is the body of your thought. Ensure your thoughts are digestible and clear, limiting to 280 characters.")
+    primary_tags_str = st.text_input("Primary Tags", help="Assign one or two primary tags to broadly categorize your thoughts. For example, 'personal', 'work', 'science', 'literature'. Separate multiple tags with commas.")
+    secondary_tags_str = st.text_input("Secondary Tags", help="Enter specific tags related to certain themes or ideas. There's no strict limit on these, but aim for 2-5 for usability. Separate with commas.")
+    sources = st.text_input("Sources", help="Keep track of any references or sources that are relevant to your thought.")
+    status = st.selectbox("Status", options=["idea", "in progress", "completed"], help="Choose the status of your thought. This can be useful if you plan to do something with certain thoughts.")
+    notes = st.text_area("Notes", help="This is an optional field for any additional thoughts or follow-up ideas you might have.")
+
+    # Convert string of tags to list
+    primary_tags = [tag.strip() for tag in primary_tags_str.split(",")]
+    secondary_tags = [tag.strip() for tag in secondary_tags_str.split(",")]
 
     if st.button('Submit'):
-        session.execute(text(f"INSERT INTO ideas({','.join(COLUMNS)}) VALUES (:{',:'.join(COLUMNS)})"), idea)
+        new_idea = {
+            "title": title,
+            "summary": summary,
+            "primary_tags": primary_tags,
+            "secondary_tags": secondary_tags,
+            "sources": sources,
+            "status": status,
+            "notes": notes,
+            "date_added": datetime.now(TIMEZONE),
+            "date_last_updated": datetime.now(TIMEZONE)
+        }
+        session.execute(text(f"INSERT INTO ideas({','.join(new_idea.keys())}) VALUES (:{',:'.join(new_idea.keys())})"), new_idea)
         session.commit()
+        st.success("Idea added successfully!")
 
 def app():
     st.title("Lifetime Thought Tracker")
@@ -55,9 +90,10 @@ def app():
     if page == "Homepage":
         st.header("Welcome to Lifetime Thought Tracker!")
         search = st.text_input("Search ideas")
+        primary_tag = st.selectbox('Select a primary tag', options=get_all_primary_tags(session))
 
         if search:
-            df = create_filtered_df(session, search_term=search)
+            df = create_filtered_df(session, search_term=search, primary_tag=primary_tag)
             for _, row in df.head(4).iterrows():
                 display_idea_details(row)
         else:
@@ -73,7 +109,7 @@ def app():
             if st.button(f"Delete Idea {row['id']}"):
                 session.execute("DELETE FROM ideas WHERE id=:id", {"id": row['id']})
                 session.commit()
-                st.success(f"Idea {row['topic']} deleted successfully!") 
+                st.success(f"Idea {row['title']} deleted successfully!") 
 
     elif page == "Add/Edit Idea":
         idea_input_fields(session)
