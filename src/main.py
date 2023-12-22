@@ -85,15 +85,17 @@ def idea_input_fields(session):
         new_idea = {
             "title": title,
             "summary": summary,
-            "primary_tags": primary_tags,
-            "secondary_tags": secondary_tags,
+            "primary_tags": primary_tags_str,
+            "secondary_tags": secondary_tags_str,
             "sources": sources,
             "status": status,
             "notes": notes,
             "date_added": datetime.now(TIMEZONE),
             "date_last_updated": datetime.now(TIMEZONE)
         }
-        session.execute(text(f"INSERT INTO ideas({','.join(new_idea.keys())}) VALUES (:{',:'.join(new_idea.keys())})"), new_idea)
+
+        insert_query = ideas.insert().values(new_idea)
+        session.execute(insert_query)
         session.commit()
         st.success("Idea added successfully!")
 
