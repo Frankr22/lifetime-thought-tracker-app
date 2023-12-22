@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Table, MetaData, Column, Integer, String, text
+from sqlalchemy import create_engine, Table, MetaData, Column, Integer, String, DateTime, text
 from sqlalchemy.orm import sessionmaker
 import streamlit as st
 import pandas as pd
@@ -27,8 +27,9 @@ ideas = Table(
     Column('sources', String),
     Column('status', String),
     Column('notes', String),
-    Column('date_added', datetime),
-    Column('date_last_updated', datetime),
+    Column('date_added', DateTime),  # Change the type to DateTime
+    Column('date_last_updated', DateTime),  # Change the type to DateTime
+)
 
 metadata.create_all(engine)
 
@@ -44,7 +45,7 @@ def create_filtered_df(session, search_term=None, primary_tag=None):
         df = df[df['summary'].str.contains(search_term, case=False) |
                 df['primary_tags'].str.contains(search_term, case=False) |
                 df['secondary_tags'].str.contains(search_term, case=False)]
-    
+
     if primary_tag:
         df = df[df['primary_tags'].str.contains(primary_tag, case=False)]
 
