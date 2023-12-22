@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Table, MetaData, Column, Integer, String
+from sqlalchemy import create_engine, Table, MetaData, Column, Integer, String, text
 from sqlalchemy.orm import sessionmaker
 import streamlit as st
 import pandas as pd
@@ -58,7 +58,7 @@ def display_idea_details(row):
             st.write(f"{column.title().replace('_', ' ')}: {row[column]}")
 
 def get_all_primary_tags(session):
-    select_query = ideas.select(columns=[ideas.c.primary_tags])
+    select_query = ideas.select().with_only_columns([ideas.c.primary_tags])
     result = session.execute(select_query)
     all_tags = set()
 
