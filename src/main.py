@@ -119,6 +119,10 @@ def app():
         else:
             st.write("Use the search box above to find ideas or use the sidebar to navigate to different pages of the application.")
 
+          # Add a button to link to the "Add New Idea" page
+        if st.button("Add New Idea"):
+            st.experimental_set_query_params(page="Add New Idea")
+
     elif page == "Data":
         keyword = st.text_input("Enter a keyword")
 
