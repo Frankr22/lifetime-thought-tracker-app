@@ -27,9 +27,8 @@ ideas = Table(
     Column('sources', String),
     Column('status', String),
     Column('notes', String),
-    Column('date_added', String),
-    Column('date_last_updated', String),
-)
+    Column('date_added', datetime),
+    Column('date_last_updated', datetime),
 
 metadata.create_all(engine)
 
