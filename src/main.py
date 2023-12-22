@@ -5,17 +5,14 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import pytz
-from sqlalchemy import text
 
 PAGES = ["Homepage", "Data", "Add/Edit Idea"]
-DB_URL = 'postgresql://postgres:postgres@localhost:5432/postgres'
+DB_URL = 'sqlite:///ideas.db'  # Updated SQLite connection string
 TIMEZONE = pytz.timezone('Australia/Perth')
 COLUMNS = ['id', 'title', 'summary', 'primary_tags', 'secondary_tags', 'sources', 'status', 'notes', 'date_added', 'date_last_updated']
 
-engine = create_engine(DB_URL)
-Session = sessionmaker(bind=engine)
-metadata = MetaData()
-ideas = Table('ideas', metadata, autoload_with=engine)
+# Remove PostgreSQL-specific setup
+Session = sessionmaker(bind=create_engine(DB_URL))
 
 def create_filtered_df(session, search_term=None, primary_tag=None):
     result = session.execute(text("SELECT * FROM ideas"))
