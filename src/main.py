@@ -121,7 +121,7 @@ def app():
 
           # Add a button to link to the "Add New Idea" page
         if st.button("Add New Idea"):
-            st.experimental_set_query_params(page="Add New Idea")
+            st.experimental_set_query_params(page="Add/Edit Idea")
 
     elif page == "Data":
         keyword = st.text_input("Enter a keyword")
