@@ -58,13 +58,15 @@ def display_idea_details(row):
             st.write(f"{column.title().replace('_', ' ')}: {row[column]}")
 
 def get_all_primary_tags(session):
-    select_query = ideas.select().with_only_columns([ideas.c.primary_tags])
+    select_query = ideas.select(columns=[ideas.c.primary_tags])
     result = session.execute(select_query)
     all_tags = set()
+
     for row in result:
         tags = row[0]
         if tags:
             all_tags.update(tags)
+
     return sorted(all_tags)
 
 def idea_input_fields(session):
