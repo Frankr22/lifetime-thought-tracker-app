@@ -58,11 +58,10 @@ def display_idea_details(row):
             st.write(f"{column.title().replace('_', ' ')}: {row[column]}")
 
 def get_all_primary_tags(session):
-    select_query = ideas.select(ideas.c.primary_tags).distinct()
-    result = session.execute(select_query)
+    select_query = session.execute(text("SELECT DISTINCT primary_tags FROM ideas"))
     all_tags = set()
 
-    for row in result:
+    for row in select_query:
         tags = row[0]
         if tags:
             all_tags.update(tags.split(','))
