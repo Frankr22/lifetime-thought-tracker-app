@@ -1,18 +1,37 @@
-from sqlalchemy import create_engine, Table, MetaData
+from sqlalchemy import create_engine, Table, MetaData, Column, Integer, String
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql import text
 import streamlit as st
 import pandas as pd
 from datetime import datetime
 import pytz
 
 PAGES = ["Homepage", "Data", "Add/Edit Idea"]
-DB_URL = 'sqlite:///ideas.db'  # Updated SQLite connection string
+DB_URL = 'sqlite:///ideas.db'
 TIMEZONE = pytz.timezone('Australia/Perth')
 COLUMNS = ['id', 'title', 'summary', 'primary_tags', 'secondary_tags', 'sources', 'status', 'notes', 'date_added', 'date_last_updated']
 
-# Remove PostgreSQL-specific setup
-Session = sessionmaker(bind=create_engine(DB_URL))
+engine = create_engine(DB_URL)
+Session = sessionmaker(bind=engine)
+
+metadata = MetaData()
+
+# Manually define the 'ideas' table
+ideas = Table(
+    'ideas',
+    metadata,
+    Column('id', Integer, primary_key=True),
+    Column('title', String),
+    Column('summary', String),
+    Column('primary_tags', String),
+    Column('secondary_tags', String),
+    Column('sources', String),
+    Column('status', String),
+    Column('notes', String),
+    Column('date_added', String),
+    Column('date_last_updated', String),
+)
+
+metadata.create_all(engine)
 
 def create_filtered_df(session, search_term=None, primary_tag=None):
     result = session.execute(text("SELECT * FROM ideas"))
